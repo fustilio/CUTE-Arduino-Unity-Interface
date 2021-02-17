@@ -35,11 +35,14 @@ You should be able to find both CUTE and the other installed libraries.
 
 ![06-VerifyLibraries.png](./docs/images/06-VerifyLibraries.png)
 
-You should also be able to open up the sample code by navigating to the examples dropdown `File > Examples > CUTE`.
+Next, open up the Ping.ino example sketch. Do so by navigating to the examples dropdown `File > Examples > CUTE > Ping`.
+These examples demonstrate some sample interactions to be used with an application with the CUTE-AUI protocol.
 
 ![07-VerifyExamples.png](./docs/images/07-VerifyExamples.png)
 
-These examples demonstrate some sample interactions to be used with an application with the CUTE-AUI protocol.
+Lastly, verify that the sketch can be compiled successfully by clicking the check mark on the top left hand corner. You should see that the sketch has been successfully compiled.
+
+![08-VerifyCompile.png](./docs/images/08-VerifyCompile.png)
 
 ## Required Libraries
 
