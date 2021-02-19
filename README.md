@@ -44,6 +44,21 @@ Lastly, verify that the sketch can be compiled successfully by clicking the chec
 
 ![08-VerifyCompile.png](./docs/images/08-VerifyCompile.png)
 
-## Required Libraries
+# Uninstall
+To uninstall the library, simply delete the CUTE-AUI folder in your Arduino Libraries directory. You can find the folder path of the libraries folder in your preferences, under `Sketchbook location`.
+
+![09-OpenPreferences.png](./docs/images/09-OpenPreferences.png)
+
+![10-Preferences.png](./docs/images/10-Preferences.png)
+
+Simply navigate to `<Arduino-Sketchbook-Location>/libraries and` 
+delete the `CUTE-AUI` folder.
+
+![11-Uninstall.png](./docs/images/11-Uninstall.png)
+
+# Updating
+To update the library, first uninstall the library and then install it again.
+
+# Library Dependencies
 
 [Functor v1.0.1 by Rich Hickey](https://github.com/janelia-arduino/Functor.git)
