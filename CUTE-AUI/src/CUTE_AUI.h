@@ -11,11 +11,13 @@
 
 const char CMD_TERMINATOR = '#';
 
-typedef Functor1<int> FtorType;
+enum FUNC_TYPE { func0, func1 };
 
 struct CMD_FUNC_PAIR {
+  FUNC_TYPE funcType;
   const char *cmd; 
-  FtorType func;
+  Functor0 func0;
+  Functor1<int> func1;
 };
 
 class CUTE_AUI
@@ -23,9 +25,10 @@ class CUTE_AUI
   public:
     CUTE_AUI();
 
-    void Init(HardwareSerial *port, unsigned int);
+    void Init(HardwareSerial *port, unsigned short int);
     void WaitUnityCommand();
     void AddCmdFuncPair(CMD_FUNC_PAIR);
+    void AddCommand(const char *, void (*func)());
     void AddCommand(const char *, void (*func)(int));
 
     void WriteToUnity(int);
@@ -36,12 +39,10 @@ class CUTE_AUI
   private:
     HardwareSerial *port;
     CMD_FUNC_PAIR *commandList;
-    unsigned int commandListSize;
-    unsigned int commandListMaxSize;
+    unsigned short int commandListSize;
+    unsigned short int commandListMaxSize;
     String outputBuffer = "";
     int paramOne;
 };
-
-extern CUTE_AUI;
 
 #endif

@@ -3,7 +3,7 @@
 // Constructor
 CUTE_AUI::CUTE_AUI() {}
 
-void CUTE_AUI::Init(HardwareSerial *serialPort, unsigned int listMaxSize)
+void CUTE_AUI::Init(HardwareSerial *serialPort, unsigned short int listMaxSize)
 {
   port = serialPort;
   
@@ -27,9 +27,15 @@ void CUTE_AUI::AddCmdFuncPair(CMD_FUNC_PAIR func_pair)
   }
 }
 
+void CUTE_AUI::AddCommand(const char *cmd, void (*func)())
+{ 
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func0, cmd, makeFunctor((Functor0 *)0,func), nullptr};
+  AddCmdFuncPair(cf_pair);
+}
+
 void CUTE_AUI::AddCommand(const char *cmd, void (*func)(int))
 { 
-  CMD_FUNC_PAIR cf_pair = {cmd, makeFunctor((FtorType *)0,func)};
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func1, cmd, nullptr, makeFunctor((Functor1<int> *)0,func)};
   AddCmdFuncPair(cf_pair);
 }
 
@@ -40,7 +46,7 @@ void CUTE_AUI::WaitUnityCommand()
   {
     String str = port->readString();
 
-    for (int i = 0; i < str.length(); i++) {
+    for (unsigned int i = 0; i < str.length(); i++) {
       char c = str.charAt(i);
   
       // end token, process command
@@ -55,11 +61,11 @@ void CUTE_AUI::WaitUnityCommand()
         if (separatorIndex < 0)
         {
           // Handle commands with no parameters
-          for (int i = 0; i < commandListSize; i++)
+          for (unsigned short int i = 0; i < commandListSize; i++)
           {
             if (outputBuffer == commandList[i].cmd)
             {
-              commandList[i].func(NULL);
+              commandList[i].func0();
               commandExecuted = true;
               break;
             }
@@ -72,11 +78,11 @@ void CUTE_AUI::WaitUnityCommand()
           outputBuffer = outputBuffer.substring(0, separatorIndex);
           
           // Handle commands with one parameter
-          for (int i = 0; i < commandListSize; i++)
+          for (unsigned short int i = 0; i < commandListSize; i++)
           {
             if (outputBuffer == commandList[i].cmd)
             {
-              commandList[i].func(paramOne);
+              commandList[i].func1(paramOne);
               commandExecuted = true;
               break;
             }

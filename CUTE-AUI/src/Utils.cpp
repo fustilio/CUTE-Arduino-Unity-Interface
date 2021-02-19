@@ -9,7 +9,7 @@ Smoother::Smoother(unsigned int numberOfReadings) : NUMBER_OF_READINGS(numberOfR
     readings = new int[NUMBER_OF_READINGS];
     
     // Init array for smoothing process used to read potentiometer
-    for (int i = 0; i < NUMBER_OF_READINGS; i++)
+    for (unsigned int i = 0; i < NUMBER_OF_READINGS; i++)
     {
         readings[i] = 0;
     }
