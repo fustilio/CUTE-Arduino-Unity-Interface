@@ -3,19 +3,40 @@
 // Constructor
 CUTE_AUI::CUTE_AUI() {}
 
-void CUTE_AUI::Init(HardwareSerial *serialPort, unsigned short int listMaxSize)
+void CUTE_AUI::Init(
+  HardwareSerial *serialPort, 
+  unsigned short int listMaxSize)
+{
+  Init(serialPort, listMaxSize, DEFAULT_PARAMETER_DELIMITER, DEFAULT_COMMAND_TERMINATOR);
+}
+
+
+void CUTE_AUI::Init(
+  HardwareSerial *serialPort, 
+  unsigned short int listMaxSize, 
+  char delimChar)
+{
+  Init(serialPort, listMaxSize, delimChar, DEFAULT_COMMAND_TERMINATOR);
+}
+
+
+void CUTE_AUI::Init(
+  HardwareSerial *serialPort, 
+  unsigned short int listMaxSize, 
+  char delimChar,
+  char endChar)
 {
   port = serialPort;
   
   if (commandList != NULL) {
     free(commandList);
   }
-
-  listMaxSize++;
   
   commandList = (CMD_FUNC_PAIR*)malloc(sizeof(CMD_FUNC_PAIR)*listMaxSize);
   commandListSize = 0;
   commandListMaxSize = listMaxSize;
+  commandEndChar = endChar;
+  commandDelimChar = delimChar;
 }
 
 void CUTE_AUI::AddCmdFuncPair(CMD_FUNC_PAIR func_pair)
@@ -29,13 +50,19 @@ void CUTE_AUI::AddCmdFuncPair(CMD_FUNC_PAIR func_pair)
 
 void CUTE_AUI::AddCommand(const char *cmd, void (*func)())
 { 
-  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func0, cmd, makeFunctor((Functor0 *)0,func), nullptr};
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func0, cmd, makeFunctor((Functor0 *)0,func), nullptr, nullptr};
   AddCmdFuncPair(cf_pair);
 }
 
 void CUTE_AUI::AddCommand(const char *cmd, void (*func)(int))
 { 
-  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func1, cmd, nullptr, makeFunctor((Functor1<int> *)0,func)};
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func1, cmd, nullptr, makeFunctor((Functor1<int> *)0,func), nullptr};
+  AddCmdFuncPair(cf_pair);
+}
+
+void CUTE_AUI::AddCommand(const char *cmd, void (*func)(int, int))
+{
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func2, cmd, nullptr, nullptr, makeFunctor((Functor2<int, int> *)0,func)};
   AddCmdFuncPair(cf_pair);
 }
 
@@ -50,41 +77,53 @@ void CUTE_AUI::WaitUnityCommand()
       char c = str.charAt(i);
   
       // end token, process command
-      if (c == CMD_TERMINATOR) 
+      if (c == commandEndChar) 
       {
         outputBuffer.trim();
 
-        int separatorIndex = outputBuffer.indexOf(PARAMETER_DELIMITER);
         bool commandExecuted = false;
-        
-        // No space in command indicates
-        if (separatorIndex < 0)
+
+        int separatorIndex = outputBuffer.lastIndexOf(commandDelimChar);
+        unsigned char delimeterCount = 0;
+        while (separatorIndex >= 0)
         {
-          // Handle commands with no parameters
-          for (unsigned short int i = 0; i < commandListSize; i++)
-          {
-            if (outputBuffer == commandList[i].cmd)
-            {
-              commandList[i].func0();
-              commandExecuted = true;
-              break;
-            }
+          // overflow
+          if (delimeterCount == PARAM_BUFFER_MAX_SIZE) {
+            port->println("ERROR: Too many parameters!");
+            
+            outputBuffer = ""; // empty buffer
+            return;
           }
-        }
-        else 
-        {
-          // Extract and parse first parameter into integer
-          paramOne = atoi(outputBuffer.substring(separatorIndex + 1).c_str());
+
+          // Extract and parse parameter into integer
+          paramBuffer[delimeterCount++] = atoi(outputBuffer.substring(separatorIndex + 1).c_str());
           outputBuffer = outputBuffer.substring(0, separatorIndex);
-          
-          // Handle commands with one parameter
-          for (unsigned short int i = 0; i < commandListSize; i++)
+          separatorIndex = outputBuffer.lastIndexOf(commandDelimChar);
+        }
+
+        // be flexible about the input keyword
+        outputBuffer.toUpperCase();
+        
+        for (unsigned short int i = 0; i < commandListSize; i++)
+        {
+          if (outputBuffer == commandList[i].cmd)
           {
-            if (outputBuffer == commandList[i].cmd)
+            switch (delimeterCount)
             {
-              commandList[i].func1(paramOne);
-              commandExecuted = true;
-              break;
+              case 0:
+                commandList[i].func0();
+                commandExecuted = true;
+                break;
+              case 1:
+                commandList[i].func1(paramBuffer[0]);
+                commandExecuted = true;
+                break;
+              case 2:
+                commandList[i].func2(paramBuffer[1], paramBuffer[0]);
+                commandExecuted = true;
+                break;
+              default:
+                port->println("ERROR: Shouldn't reach here");
             }
           }
         }
