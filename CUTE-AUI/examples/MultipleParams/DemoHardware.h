@@ -5,6 +5,7 @@
 
 #define DEFAULT_INTERNAL_VALUE 500
 #define DEFAULT_INTERVAL 50
+#define INTERNAL_VALUES_MAX_SIZE 4
 
 class _DEMO_HARDWARE: public CUTE_HardwareModule
 {
@@ -14,11 +15,15 @@ class _DEMO_HARDWARE: public CUTE_HardwareModule
 
     void Init(CUTE_AUI);
     void ReadInternal(unsigned long currentMillis);
+    void PrintInternal();
+    void WriteInternal(int);
     void WriteInternal(int, int);
+    void WriteInternal(int, int, int);
+    void WriteInternal(int, int, int, int);
+
 
   private:
-    int internalValue1;
-    int internalValue2;
+    int internalValues[INTERNAL_VALUES_MAX_SIZE];
     unsigned intervalValue;
 
 };
