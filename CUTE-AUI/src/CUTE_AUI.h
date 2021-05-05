@@ -10,9 +10,15 @@
 #define DEFAULT_PARAMETER_DELIMITER ' '
 #define DEFAULT_COMMAND_TERMINATOR '#'
 
-#define PARAM_BUFFER_MAX_SIZE 2
+#define PARAM_BUFFER_MAX_SIZE 4
 
-enum FUNC_TYPE { func0, func1, func2 };
+enum FUNC_TYPE { 
+  func0, 
+  func1, 
+  func2, 
+  func3, 
+  func4 
+};
 
 struct CMD_FUNC_PAIR {
   FUNC_TYPE funcType;
@@ -20,6 +26,8 @@ struct CMD_FUNC_PAIR {
   Functor0 func0;
   Functor1<int> func1;
   Functor2<int, int> func2;
+  Functor3<int, int, int> func3;
+  Functor4<int, int, int, int> func4;
 };
 
 class CUTE_AUI
@@ -35,6 +43,8 @@ class CUTE_AUI
     void AddCommand(const char *, void (*func)());
     void AddCommand(const char *, void (*func)(int));
     void AddCommand(const char *, void (*func)(int, int));
+    void AddCommand(const char *, void (*func)(int, int, int));
+    void AddCommand(const char *, void (*func)(int, int, int, int));
 
     void WriteToUnity(int);
     void WriteToUnity(String);
@@ -47,6 +57,7 @@ class CUTE_AUI
     unsigned short int commandListSize;
     unsigned short int commandListMaxSize;
     String outputBuffer = "";
+    // -32,768 to 32,767
     int paramBuffer[PARAM_BUFFER_MAX_SIZE];
     char commandEndChar;
     char commandDelimChar;

@@ -50,21 +50,35 @@ void CUTE_AUI::AddCmdFuncPair(CMD_FUNC_PAIR func_pair)
 
 void CUTE_AUI::AddCommand(const char *cmd, void (*func)())
 { 
-  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func0, cmd, makeFunctor((Functor0 *)0,func), nullptr, nullptr};
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func0, cmd, makeFunctor((Functor0 *)0,func), nullptr, nullptr, nullptr, nullptr};
   AddCmdFuncPair(cf_pair);
 }
 
 void CUTE_AUI::AddCommand(const char *cmd, void (*func)(int))
 { 
-  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func1, cmd, nullptr, makeFunctor((Functor1<int> *)0,func), nullptr};
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func1, cmd, nullptr, makeFunctor((Functor1<int> *)0,func), nullptr, nullptr, nullptr};
   AddCmdFuncPair(cf_pair);
 }
 
 void CUTE_AUI::AddCommand(const char *cmd, void (*func)(int, int))
 {
-  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func2, cmd, nullptr, nullptr, makeFunctor((Functor2<int, int> *)0,func)};
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func2, cmd, nullptr, nullptr, makeFunctor((Functor2<int, int> *)0,func), nullptr, nullptr};
   AddCmdFuncPair(cf_pair);
 }
+
+
+void CUTE_AUI::AddCommand(const char *cmd, void (*func)(int, int, int))
+{
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func3, cmd, nullptr, nullptr, nullptr, makeFunctor((Functor3<int, int, int> *)0,func), nullptr};
+  AddCmdFuncPair(cf_pair);
+}
+
+void CUTE_AUI::AddCommand(const char *cmd, void (*func)(int, int, int, int))
+{
+  CMD_FUNC_PAIR cf_pair = {FUNC_TYPE::func4, cmd, nullptr, nullptr, nullptr, nullptr, makeFunctor((Functor4<int, int, int, int> *)0,func)};
+  AddCmdFuncPair(cf_pair);
+}
+
 
 // Wait for commands from Unity
 void CUTE_AUI::WaitUnityCommand()
@@ -75,64 +89,117 @@ void CUTE_AUI::WaitUnityCommand()
 
     for (unsigned int i = 0; i < str.length(); i++) {
       char c = str.charAt(i);
-  
+
       // end token, process command
       if (c == commandEndChar) 
       {
         outputBuffer.trim();
-
-        bool commandExecuted = false;
-
-        int separatorIndex = outputBuffer.lastIndexOf(commandDelimChar);
-        unsigned char delimeterCount = 0;
-        while (separatorIndex >= 0)
-        {
-          // overflow
-          if (delimeterCount == PARAM_BUFFER_MAX_SIZE) {
-            port->println("ERROR: Too many parameters!");
-            
-            outputBuffer = ""; // empty buffer
-            return;
-          }
-
-          // Extract and parse parameter into integer
-          paramBuffer[delimeterCount++] = atoi(outputBuffer.substring(separatorIndex + 1).c_str());
-          outputBuffer = outputBuffer.substring(0, separatorIndex);
-          separatorIndex = outputBuffer.lastIndexOf(commandDelimChar);
-        }
-
-        // be flexible about the input keyword
-        outputBuffer.toUpperCase();
         
+        String commandKey = "";
+        String paramStringBuffer = "";
+        CMD_FUNC_PAIR *cmdFuncPair = nullptr;
+        bool commandFound = false;
+        int commandNumberParams = 0;
+        bool error = false;
+        
+        int splitIndex = outputBuffer.indexOf(commandDelimChar);
+        if (splitIndex < 0) // EXAMPLE COMMAND: "FOO"
+        {
+          commandKey = outputBuffer;
+        }
+        else // EXAMPLE COMMAND: "FOO 123 456" => "FOO" and "123 456"
+        {
+          commandKey = outputBuffer.substring(0, splitIndex);
+          paramStringBuffer = outputBuffer.substring(splitIndex + 1);
+        }
+        
+        // be flexible about the command keyword
+        commandKey.toUpperCase();
+
         for (unsigned short int i = 0; i < commandListSize; i++)
         {
-          if (outputBuffer == commandList[i].cmd)
+          if (commandKey == commandList[i].cmd)
           {
-            switch (delimeterCount)
-            {
-              case 0:
-                commandList[i].func0();
-                commandExecuted = true;
-                break;
-              case 1:
-                commandList[i].func1(paramBuffer[0]);
-                commandExecuted = true;
-                break;
-              case 2:
-                commandList[i].func2(paramBuffer[1], paramBuffer[0]);
-                commandExecuted = true;
-                break;
-              default:
-                port->println("ERROR: Shouldn't reach here");
-            }
+            cmdFuncPair = &commandList[i];
+            commandNumberParams = (int) cmdFuncPair->funcType;
+            commandFound = true;
+            break;
           }
         }
 
-        if (!commandExecuted)
+        if (!commandFound)
         {
-          port->println("ERROR: Invalid Command");
+          port->print("ERROR: Can't find command with name ");
+          port->println(commandKey);
         }
-        
+        else
+        {
+          unsigned char paramCount = 0;
+          int separatorIndex;
+          while (paramStringBuffer.length() > 0)
+          {
+            if (paramCount >= commandNumberParams) 
+            {
+              port->print("ERROR: Too many parameters, expected only ");
+              port->print(commandNumberParams);
+              port->println(" parameter(s)");
+              error = true;
+              break;
+            }
+
+            separatorIndex = paramStringBuffer.indexOf(commandDelimChar);
+            if (separatorIndex >= 0)
+            {
+              // Extract and parse parameter into integer
+              paramBuffer[paramCount++] = atoi(paramStringBuffer.substring(0, separatorIndex).c_str());
+              paramStringBuffer = paramStringBuffer.substring(separatorIndex + 1);
+              paramStringBuffer.trim(); // to remove extra spaces
+            }
+            else
+            {
+              // add the last element into buffer
+              paramBuffer[paramCount++] = atoi(paramStringBuffer.c_str());
+              paramStringBuffer = "";
+            }
+          }
+
+          if (paramCount < commandNumberParams)
+          {
+            port->print("ERROR: Too few parameters, expected ");
+            port->print(commandNumberParams);
+            port->println(" parameter(s)");
+            error = true;
+          }
+
+          if (!error) {
+            switch (cmdFuncPair->funcType)
+            {
+              case FUNC_TYPE::func0:
+                cmdFuncPair->func0();
+                break;
+              case FUNC_TYPE::func1:
+                cmdFuncPair->func1(paramBuffer[0]);
+                break;
+              case FUNC_TYPE::func2:
+                cmdFuncPair->func2(paramBuffer[0], paramBuffer[1]);
+                break;
+              case FUNC_TYPE::func3:
+                cmdFuncPair->func3(paramBuffer[0], paramBuffer[1], paramBuffer[1]);
+                break;
+              case FUNC_TYPE::func4:
+                cmdFuncPair->func4(paramBuffer[0], paramBuffer[1], paramBuffer[2], paramBuffer[3]);
+                break;
+              default:
+                // shouldn't ever reach here
+                port->println("ERROR: Internal library error");
+            }
+          }
+          else
+          {
+            port->println("ERROR: Command execution failed");
+          }
+        }
+      
         outputBuffer = ""; // empty buffer
       }
       else // otherwise, keep adding to buffer
